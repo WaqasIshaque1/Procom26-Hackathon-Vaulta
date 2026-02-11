@@ -1,6 +1,10 @@
 # 🏦 Vaulta AI: Hybrid Voice & Chat AI Agent
 
-> **📞 You can even phone call this agent and talk to it using SMS!**
+> **📞 Live Demo: Talk to Vaulta AI now!**
+> 
+> *   **+1 (725) 444 4105** (Calls)
+> *   **+1 (717) 539 5595** (SMS + Calls)
+> *   **+1 (830) 374 0578** (Call)
 
 This repository hosts a next-generation **Hybrid AI Voice & Chat Agent** built for **Vaulta AI**. It seamlessly handles customer intents through **Omnichannel** interactions—including **Telephony, SMS, Web Voice, and Chat**—enforcing strict banking security guardrails.
 
