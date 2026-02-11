@@ -1,0 +1,139 @@
+graph TB
+    subgraph User Layer
+        User[User<br/>Phone Call]
+    end
+    
+    subgraph Voice Platform - Vapi
+        STT[Speech-to-Text<br/>Deepgram]
+        TTS[Text-to-Speech<br/>ElevenLabs]
+        CallMgmt[Call Management]
+    end
+    
+    subgraph Frontend - Next.js
+        WebUI[Web Dashboard<br/>localhost:3000]
+        IntroUI[IntroUI Component<br/>Landing Page]
+        HeroHome[HeroHome Component<br/>Call Interface]
+    end
+    
+    subgraph Backend - FastAPI Python 3.12
+        subgraph API Layer
+            VapiRoutes[vapi_routes.py<br/>POST /chat/completions]
+            AdminRoutes[admin_routes.py<br/>Session Management]
+            Health[Health Endpoints<br/>/health /api/health/detailed]
+        end
+        
+        subgraph Security Layer
+            Security[security.py<br/>- Extract credentials<br/>- Redact PII<br/>- Normalize spoken numbers<br/>- Hash customer IDs]
+        end
+        
+        subgraph Session Management
+            SessionMgr[session_manager.py<br/>In-memory sessions<br/>5 min timeout<br/>Auto cleanup]
+        end
+        
+        subgraph LangGraph Agent
+            Graph[graph.py<br/>Workflow Orchestration]
+            State[state.py<br/>AgentState Schema]
+            Prompts[prompts.py<br/>System Prompts]
+            
+            subgraph Agent Nodes
+                IntentRouter[intent_router.py<br/>Intent Classification]
+                AuthGate[auth_gate.py<br/>Authentication Check]
+                AccountFlow[account_flow.py<br/>10 handlers:<br/>balance, transactions,<br/>loans, rewards, cards,<br/>cheque, fraud, intl, etc]
+                CardFlow[card_flow.py<br/>Card Management<br/>Block cards]
+                Greeting[greeting_handler.py<br/>Small Talk]
+                Confirmation[confirmation.py<br/>High-risk confirmations]
+            end
+        end
+        
+        subgraph Banking Services
+            BankingAPI[banking_api.py<br/>12 Functions:<br/>- verify_identity<br/>- get_account_balance<br/>- get_transactions<br/>- get_loan_info<br/>- get_card_details<br/>- list_customer_cards<br/>- block_card<br/>- request_statement<br/>- submit_feedback<br/>- request_cheque_book<br/>- report_fraud<br/>- toggle_international]
+        end
+        
+        subgraph Core Services
+            Config[config.py<br/>Environment Settings]
+            LLMFactory[llm_factory.py<br/>Multi-provider LLM<br/>OpenAI + Gemini<br/>Auto fallback]
+            DBConn[database.py<br/>PostgreSQL Connection<br/>Connection pooling]
+        end
+    end
+    
+    subgraph Data Layer
+        subgraph Mock Data - Instant 0-5ms
+            MockCustomers[MOCK_CUSTOMERS<br/>Customer ID: 1234<br/>PIN: 5678<br/>Full test data]
+        end
+        
+        subgraph PostgreSQL Database - Neon Serverless
+            CustomersTable[(customers<br/>60 rows<br/>PINs, balances,<br/>account_frozen,<br/>intl_enabled)]
+            CardsTable[(cards<br/>59 rows<br/>rewards, last4,<br/>payment due,<br/>card_status)]
+            TransactionsTable[(transactions<br/>59 rows<br/>categorized,<br/>amounts, dates)]
+            LoansTable[(loans<br/>59 rows<br/>amounts, rates,<br/>terms, status)]
+            FeedbackTable[(feedback<br/>59 rows<br/>complaints,<br/>praise, suggestions)]
+            ServiceReqTable[(service_requests<br/>fraud reports,<br/>cheque books,<br/>intl toggles)]
+        end
+    end
+    
+    subgraph External Services
+        OpenAI[OpenAI API<br/>GPT-4o-mini<br/>Primary LLM]
+        Gemini[Google Gemini<br/>gemini-2.0-flash<br/>Fallback LLM]
+        LangSmith[LangSmith<br/>Observability<br/>Trace logging<br/>Project: vaulta]
+        Ngrok[ngrok<br/>Tunnel to localhost:8000<br/>Public endpoint]
+    end
+    
+    User -->|Voice| STT
+    STT -->|Text| VapiRoutes
+    VapiRoutes -->|OpenAI format| Security
+    Security --> SessionMgr
+    SessionMgr --> Graph
+    
+    Graph --> IntentRouter
+    IntentRouter --> AuthGate
+    AuthGate --> AccountFlow
+    AuthGate --> CardFlow
+    AuthGate --> Greeting
+    AccountFlow --> Confirmation
+    CardFlow --> Confirmation
+    
+    AccountFlow --> BankingAPI
+    CardFlow --> BankingAPI
+    
+    BankingAPI -->|Check customer 1234| MockCustomers
+    BankingAPI -->|Other customers| DBConn
+    
+    DBConn --> CustomersTable
+    DBConn --> CardsTable
+    DBConn --> TransactionsTable
+    DBConn --> LoansTable
+    DBConn --> FeedbackTable
+    DBConn --> ServiceReqTable
+    
+    Graph --> LLMFactory
+    LLMFactory -->|Primary| OpenAI
+    LLMFactory -->|Fallback| Gemini
+    
+    Graph --> LangSmith
+    
+    VapiRoutes -->|Response| TTS
+    TTS -->|Voice| User
+    
+    WebUI --> HeroHome
+    HeroHome -->|Start Call| CallMgmt
+    CallMgmt --> STT
+    
+    Ngrok -.->|Expose| VapiRoutes
+    
+    Config -.->|Configure| LLMFactory
+    Config -.->|Configure| DBConn
+    Config -.->|Configure| LangSmith
+    
+    style User fill:#e1f5e1
+    style MockCustomers fill:#90EE90
+    style CustomersTable fill:#87CEEB
+    style CardsTable fill:#87CEEB
+    style TransactionsTable fill:#87CEEB
+    style LoansTable fill:#87CEEB
+    style FeedbackTable fill:#87CEEB
+    style ServiceReqTable fill:#87CEEB
+    style Security fill:#fff3cd
+    style BankingAPI fill:#ffd700
+    style LangSmith fill:#e1d5e7
+    style OpenAI fill:#d4edda
+    style Gemini fill:#d4edda

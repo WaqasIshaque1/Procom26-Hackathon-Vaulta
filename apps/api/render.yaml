@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: vaulta-backend
+    env: python
+    region: oregon
+    plan: free
+    
+    # Build Configuration
+    buildCommand: pip install -r requirements.txt
+    
+    # Start Configuration
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    
+    # Environment Variables
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.1
+      
+      - key: ENVIRONMENT
+        value: production
+      
+      - key: OPENAI_API_KEY
+        sync: false
+      
+      - key: LANGCHAIN_TRACING_V2
+        value: "true"
+      
+      - key: LANGCHAIN_API_KEY
+        sync: false
+      
+      - key: LANGCHAIN_PROJECT
+        value: vaulta
+      
+      - key: PORT
+        value: 8000
+    
+    # Health Check
+    healthCheckPath: /health

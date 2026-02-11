@@ -1,0 +1,16 @@
+name: Health Check (Keep Alive)
+
+on:
+  schedule:
+    - cron: '*/14 * * * *' # Run every 14 minutes to prevent Render free instance from spinning down
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  ping-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Backend Service
+        run: |
+          echo "Pinging https://vaulta-backend-jdqr.onrender.com/ to keep it alive..."
+          curl -I https://vaulta-backend-jdqr.onrender.com/
+          echo "Ping complete."

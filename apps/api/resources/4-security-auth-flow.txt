@@ -1,0 +1,29 @@
+flowchart TD
+    UserInput[User Voice Input] --> Extract[Extract Credentials<br/>Regex patterns]
+    
+    Extract --> Found{Credentials<br/>Found?}
+    
+    Found -->|Customer ID and PIN| Normalize[Normalize spoken numbers<br/>one two three four to 1234]
+    Found -->|No| NoAuth[Continue without auth]
+    
+    Normalize --> Verify[Verify Identity<br/>Check PIN in database]
+    
+    Verify --> Match{PIN<br/>Matches?}
+    
+    Match -->|Yes| Success[Authentication Success<br/>Set verified=true<br/>Store customer_id<br/>Hash for logs]
+    
+    Match -->|No| Fail[Authentication Failed<br/>Increment attempts]
+    Fail --> AttemptsCheck{Attempts<br/>less than 3?}
+    AttemptsCheck -->|Yes| RetryMsg[Show error retry prompt]
+    AttemptsCheck -->|No| Lockout[Account Lockout<br/>Escalate to human]
+    
+    Success --> Redact[Redact from logs<br/>REDACTED_ID<br/>REDACTED_PIN]
+    NoAuth --> Redact
+    RetryMsg --> Redact
+    
+    Redact --> ToLLM[Send to LLM<br/>No PII in traces]
+    
+    style Success fill:#d4edda
+    style Fail fill:#f8d7da
+    style Lockout fill:#ff6666,color:#fff
+    style Redact fill:#fff3cd

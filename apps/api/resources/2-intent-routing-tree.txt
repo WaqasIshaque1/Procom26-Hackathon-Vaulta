@@ -1,0 +1,39 @@
+flowchart TD
+    Input[User Input] --> Priority1{Contains fraud<br/>keywords?}
+    
+    Priority1 -->|Yes| FraudIntent[FRAUD REPORTING<br/>Highest Priority]
+    
+    Priority1 -->|No| Priority2{Contains cheque<br/>keywords?}
+    Priority2 -->|Yes| ChequeIntent[Cheque Book Request]
+    
+    Priority2 -->|No| Priority3{Contains international<br/>keywords?}
+    Priority3 -->|Yes| IntlIntent[International Toggle]
+    
+    Priority3 -->|No| Priority4{Contains balance<br/>keywords?}
+    Priority4 -->|Yes| BalanceIntent[Account Balance]
+    
+    Priority4 -->|No| Priority5{Contains transaction<br/>keywords?}
+    Priority5 -->|Yes| TxnIntent[Transaction History]
+    
+    Priority5 -->|No| Priority6{Contains statement<br/>keywords?}
+    Priority6 -->|Yes| StatementIntent[Statement Request]
+    
+    Priority6 -->|No| Priority7{Contains loan<br/>keywords?}
+    Priority7 -->|Yes| LoanIntent[Loan Information]
+    
+    Priority7 -->|No| Priority8{Contains reward<br/>keywords?}
+    Priority8 -->|Yes| RewardIntent[Rewards Points]
+    
+    Priority8 -->|No| Priority9{Contains card<br/>keywords?}
+    Priority9 -->|Yes and No block| CardListIntent[List Cards]
+    Priority9 -->|Yes and block| BlockIntent[Block Card]
+    
+    Priority9 -->|No| Priority10{Contains feedback<br/>keywords?}
+    Priority10 -->|Yes| FeedbackIntent[Feedback]
+    
+    Priority10 -->|No| DefaultIntent[Show Menu<br/>of Options]
+    
+    style FraudIntent fill:#ff6666,color:#fff
+    style ChequeIntent fill:#cce5ff
+    style IntlIntent fill:#d4edda
+    style BalanceIntent fill:#fff3cd

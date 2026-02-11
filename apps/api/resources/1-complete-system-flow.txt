@@ -1,0 +1,134 @@
+flowchart TD
+    Start([User Makes Voice Call]) --> Vapi[Vapi Platform<br/>Speech-to-Text]
+    Vapi --> API[FastAPI Backend<br/>/chat/completions]
+    
+    API --> Security[Security Layer<br/>Extract credentials<br/>Redact PII<br/>Normalize spoken numbers]
+    Security --> Session[Session Manager<br/>Get/Create Session]
+    
+    Session --> Auth{Credentials<br/>Provided?}
+    Auth -->|Yes| VerifyAuth[Verify Identity<br/>PIN Authentication]
+    VerifyAuth --> AuthResult{Valid?}
+    AuthResult -->|Yes| SetVerified[Set verified=true<br/>Store customer_id]
+    AuthResult -->|No| AuthFail[Failed Attempts++]
+    AuthFail --> MaxAttempts{Max<br/>Attempts?}
+    MaxAttempts -->|Yes| Escalate[Escalate to Human]
+    MaxAttempts -->|No| Graph
+    
+    Auth -->|No| Graph
+    SetVerified --> Graph
+    
+    Graph[LangGraph Workflow] --> IntentRouter[Intent Router<br/>Classify User Request]
+    
+    IntentRouter --> IsGreeting{Small Talk?}
+    IsGreeting -->|Yes| Greeting[Greeting Handler<br/>Respond to casual chat]
+    Greeting --> Response
+    
+    IsGreeting -->|No| IsFraud{Fraud<br/>Keywords?}
+    
+    IsFraud -->|Yes - CRITICAL| FraudFlow[FRAUD REPORTING]
+    FraudFlow --> FreezeAccount[1. Freeze Account<br/>account_frozen = TRUE]
+    FreezeAccount --> BlockCards[2. Block ALL Cards<br/>card_status = blocked]
+    BlockCards --> LogFraud[3. Log in service_requests]
+    LogFraud --> EscalateFraud[4. ESCALATE TO HUMAN<br/>requires_human = TRUE]
+    EscalateFraud --> Response
+    
+    IsFraud -->|No| AuthGate{Requires<br/>Auth?}
+    
+    AuthGate -->|Yes and Not Verified| RequestAuth[Request Credentials<br/>Preserve original_intent]
+    RequestAuth --> Response
+    
+    AuthGate -->|No or Verified| RouteIntent[Route by Intent]
+    
+    RouteIntent --> CheckIntent{Intent<br/>Type?}
+    
+    CheckIntent -->|Cheque Book| ChequeFlow[Cheque Book Request]
+    ChequeFlow --> GenRef1[Generate Reference<br/>CHQ-YYYYMMDD-XXXX]
+    GenRef1 --> LogCheque[Log in service_requests]
+    LogCheque --> ChequeConfirm[Confirm 7-10 day delivery<br/>to registered address]
+    ChequeConfirm --> Response
+    
+    CheckIntent -->|International| IntlFlow[International Toggle]
+    IntlFlow --> DetectAction{Enable or<br/>Disable?}
+    DetectAction -->|Enable| EnableIntl[UPDATE customers<br/>SET intl_enabled = TRUE]
+    DetectAction -->|Disable| DisableIntl[UPDATE customers<br/>SET intl_enabled = FALSE]
+    EnableIntl --> IntlLog[Log in service_requests]
+    DisableIntl --> IntlLog
+    IntlLog --> Response
+    
+    CheckIntent -->|Balance| BalanceFlow[Account Balance]
+    BalanceFlow --> CheckSource1{Customer<br/>in Mock?}
+    CheckSource1 -->|Yes - 0ms| MockBalance[Return hardcoded balance]
+    CheckSource1 -->|No| DBBalance[Query PostgreSQL<br/>SELECT account_balance]
+    MockBalance --> Response
+    DBBalance --> Response
+    
+    CheckIntent -->|Transactions| TxnFlow[Transaction History]
+    TxnFlow --> CheckSource2{Customer<br/>in Mock?}
+    CheckSource2 -->|Yes| MockTxn[Return hardcoded<br/>transactions]
+    CheckSource2 -->|No| DBTxn[Query PostgreSQL<br/>transactions table]
+    MockTxn --> FormatTxn[Format for voice<br/>Last 3 transactions]
+    DBTxn --> FormatTxn
+    FormatTxn --> Response
+    
+    CheckIntent -->|Loans| LoanFlow[Loan Information]
+    LoanFlow --> CheckSource3{Customer<br/>in Mock?}
+    CheckSource3 -->|Yes| MockLoan[Return hardcoded loan]
+    CheckSource3 -->|No| DBLoan[Query PostgreSQL<br/>loans table]
+    MockLoan --> FormatLoan[Format type amount<br/>rate term status]
+    DBLoan --> FormatLoan
+    FormatLoan --> Response
+    
+    CheckIntent -->|Rewards| RewardFlow[Rewards Points]
+    RewardFlow --> GetCardDetails[Get card details<br/>with rewards_points]
+    GetCardDetails --> CalcValue[Calculate cash value<br/>1 point = 0.01 dollars]
+    CalcValue --> Response
+    
+    CheckIntent -->|List Cards| CardListFlow[List Cards]
+    CardListFlow --> CheckSource4{Customer<br/>in Mock?}
+    CheckSource4 -->|Yes| MockCards[Return hardcoded cards]
+    CheckSource4 -->|No| DBCards[Query PostgreSQL<br/>cards table]
+    MockCards --> FormatCards[Format type last4<br/>status]
+    DBCards --> FormatCards
+    FormatCards --> Response
+    
+    CheckIntent -->|Block Card| BlockFlow[Block Card]
+    BlockFlow --> WhichCard[Identify which card]
+    WhichCard --> ConfirmBlock{User<br/>Confirms?}
+    ConfirmBlock -->|Yes| UpdateCard[UPDATE cards<br/>SET card_status=blocked]
+    ConfirmBlock -->|No| CancelBlock[Cancel operation]
+    UpdateCard --> GenRef2[Generate BLK-YYYYMMDD-XXXX]
+    GenRef2 --> Response
+    CancelBlock --> Response
+    
+    CheckIntent -->|Statement| StatementFlow[Statement Request]
+    StatementFlow --> GetEmail[Get customer email]
+    GetEmail --> GenRef3[Generate reference]
+    GenRef3 --> Response
+    
+    CheckIntent -->|Feedback| FeedbackFlow[Feedback Submission]
+    FeedbackFlow --> DetectType{Detect<br/>Type}
+    DetectType -->|Complaint| TypeComplaint[feedback_type = Complaint]
+    DetectType -->|Praise| TypePraise[feedback_type = Praise]
+    DetectType -->|Other| TypeSuggestion[feedback_type = Suggestion]
+    TypeComplaint --> InsertFeedback[INSERT INTO feedback]
+    TypePraise --> InsertFeedback
+    TypeSuggestion --> InsertFeedback
+    InsertFeedback --> GenRef4[Generate FB-YYYYMMDD-XXXX]
+    GenRef4 --> Response
+    
+    Response[Format Response] --> LangSmith[Log to LangSmith<br/>Trace execution]
+    LangSmith --> TTS[Vapi Text-to-Speech<br/>ElevenLabs]
+    TTS --> End([User Hears Response])
+    
+    Escalate --> End
+    EscalateFraud --> End
+    
+    style Start fill:#e1f5e1
+    style End fill:#e1f5e1
+    style FraudFlow fill:#ffcccc
+    style FreezeAccount fill:#ff9999
+    style BlockCards fill:#ff9999
+    style EscalateFraud fill:#ff6666
+    style Security fill:#fff3cd
+    style Auth fill:#d1ecf1
+    style VerifyAuth fill:#d1ecf1

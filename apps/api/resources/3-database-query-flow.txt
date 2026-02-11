@@ -1,0 +1,29 @@
+flowchart LR
+    Request[Banking Request] --> HybridCheck{Customer ID<br/>= 1234?}
+    
+    HybridCheck -->|Yes| Mock[MOCK_CUSTOMERS<br/>Hardcoded Data]
+    Mock --> Instant[Response 0-5ms<br/>No DB query]
+    
+    HybridCheck -->|No| CheckDB[PostgreSQL Database]
+    CheckDB --> QueryType{Query<br/>Type?}
+    
+    QueryType -->|Auth| AuthQ[SELECT pin<br/>FROM customers<br/>WHERE customer_id]
+    QueryType -->|Balance| BalQ[SELECT account_balance<br/>FROM customers<br/>WHERE customer_id]
+    QueryType -->|Transactions| TxnQ[SELECT FROM transactions<br/>WHERE customer_id<br/>ORDER BY date DESC<br/>LIMIT 3]
+    QueryType -->|Loans| LoanQ[SELECT FROM loans<br/>WHERE customer_id]
+    QueryType -->|Cards| CardQ[SELECT FROM cards<br/>WHERE customer_id]
+    QueryType -->|Fraud| FraudQ[UPDATE customers<br/>SET account_frozen=TRUE<br/>UPDATE cards<br/>SET card_status=blocked]
+    
+    AuthQ --> DBResponse[Response 50-4000ms<br/>Real data]
+    BalQ --> DBResponse
+    TxnQ --> DBResponse
+    LoanQ --> DBResponse
+    CardQ --> DBResponse
+    FraudQ --> DBResponse
+    
+    Instant --> Return[Return to Agent]
+    DBResponse --> Return
+    
+    style Mock fill:#90EE90
+    style CheckDB fill:#87CEEB
+    style FraudQ fill:#FFB6C1
